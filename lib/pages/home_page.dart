@@ -5,6 +5,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:money_manager/controllers/db_helper.dart';
 import 'package:money_manager/models/transaction_model.dart';
 import 'package:money_manager/pages/add_transaction.dart';
+import 'package:money_manager/widgets/conform_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
@@ -15,6 +16,21 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  List<String> months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
   DbHelper dbHelper = DbHelper();
   DateTime today = DateTime.now();
   late Box box;
@@ -25,34 +41,12 @@ class _HomePageState extends State<HomePage> {
   late SharedPreferences preferences;
   List<FlSpot> dataSet = [];
 
-  ///fun to get plotPoints
-  List<FlSpot> getPloatPoints(Map entireData) {
-    dataSet = [];
-    entireData.forEach((key, value) {
-      if (value['type'] == "Expense" &&
-          (value['date'] as DateTime).month == today.month) {
-        dataSet.add(FlSpot((value['date'] as DateTime).day.toDouble(),
-            (value['amount'] as int).toDouble()));
-      }
-    });
-    return dataSet;
-  }
-
-  //fun to get totalBalance
-  getTotalBalance(List<TransactionModel> entireData) {
-    totalBalance = 0;
-    totalExpense = 0;
-    totalIncome = 0;
-    entireData.forEach((key, value) {
-      // print(key);
-      if (value['type'] == "Income") {
-        totalBalance += (value['amount'] as int);
-        totalIncome += (value['amount'] as int);
-      } else {
-        totalBalance -= (value['amount'] as int);
-        totalExpense += (value['amount'] as int);
-      }
-    });
+  @override
+  void initState() {
+    super.initState();
+    getPreferences();
+    box = Hive.box("money");
+    fetch();
   }
 
   getPreferences() async {
@@ -73,12 +67,45 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    getPreferences();
-    box = Hive.box("money");
-    fetch();
+  ///fun to get plotPoints
+  List<FlSpot> getPloatPoints(List<TransactionModel> entireData) {
+    dataSet = [];
+
+    List tempDataSet = [];
+    for (TransactionModel data in entireData) {
+      if (data.date.month == today.month && data.type == "Expense") {
+        tempDataSet.add(data);
+      }
+    }
+    //sorting of
+    tempDataSet.sort((a, b) => a.date.day.compareTo(b.date.day));
+
+    for (var i = 0; i < tempDataSet.length; i++) {
+      dataSet.add(FlSpot(
+        tempDataSet[i].date.day.toDouble(),
+        tempDataSet[i].amount.toDouble(),
+      ));
+    }
+
+    return dataSet;
+  }
+
+  //fun to get totalBalance
+  getTotalBalance(List<TransactionModel> entireData) {
+    totalBalance = 0;
+    totalExpense = 0;
+    totalIncome = 0;
+    for (TransactionModel data in entireData) {
+      if (data.date.month == today.month) {
+        if (data.type == "Income") {
+          totalBalance += data.amount;
+          totalIncome += data.amount;
+        } else {
+          totalBalance -= data.amount;
+          totalExpense += data.amount;
+        }
+      }
+    }
   }
 
   @override
@@ -120,8 +147,8 @@ class _HomePageState extends State<HomePage> {
                 }
 
                 //card totalbalance
-                // getTotalBalance(snapshot.data!);
-                // getPloatPoints(snapshot.data!);
+                getTotalBalance(snapshot.data!);
+                getPloatPoints(snapshot.data!);
                 return ListView(
                   children: [
                     Padding(
@@ -270,7 +297,7 @@ class _HomePageState extends State<HomePage> {
                                 borderData: FlBorderData(show: false),
                                 lineBarsData: [
                                   LineChartBarData(
-                                      spots: getPloatPoints({}),
+                                      spots: getPloatPoints(snapshot.data!),
                                       isCurved: false,
                                       barWidth: 2.5,
                                       color: Colors.blueAccent)
@@ -280,7 +307,7 @@ class _HomePageState extends State<HomePage> {
                     Padding(
                       padding: const EdgeInsets.all(12),
                       child: Text(
-                        "Recent Expenses",
+                        "Recent Transactions",
                         style: GoogleFonts.lato(
                           fontSize: 30,
                           fontWeight: FontWeight.bold,
@@ -295,16 +322,33 @@ class _HomePageState extends State<HomePage> {
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: snapshot.data!.length,
                         itemBuilder: (context, index) {
-                          // Map dataAtIndex = snapshot.data![index];
-                          Map dataAtIndex = {};
-                          if (dataAtIndex['type'] == "Income") {
-                            return incomeTile(
-                                dataAtIndex['amount'], dataAtIndex['note']);
+                          TransactionModel dataAtIndex;
+                          try {
+                            dataAtIndex = snapshot.data![index];
+                            try {
+                              dataAtIndex = snapshot.data![index];
+                            } catch (e) {
+                              return Container();
+                            }
+                          } catch (e) {
+                            return Container();
+                          }
+
+                          if (dataAtIndex.type == "Income") {
+                            return incomeTile(dataAtIndex.amount,
+                                dataAtIndex.note, dataAtIndex.date, index);
                           } else {
                             return expenseTile(
-                                dataAtIndex['amount'], dataAtIndex['note']);
+                              dataAtIndex.amount,
+                              dataAtIndex.note,
+                              dataAtIndex.date,
+                              index,
+                            );
                           }
-                        })
+                        }),
+                    const SizedBox(
+                      height: 60,
+                    ),
                   ],
                 );
               } else {
@@ -390,43 +434,111 @@ Widget cardExpense(String value) {
   );
 }
 
-Widget expenseTile(int value, String note) {
-  return Container(
-    margin: const EdgeInsets.all(8),
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-        color: const Color(0xffced4eb), borderRadius: BorderRadius.circular(8)),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        const Row(
-          children: [
-            Icon(
-              Icons.arrow_circle_up_outlined,
-              size: 23,
-              color: Colors.redAccent,
-            ),
-            SizedBox(
-              width: 4,
-            ),
-            Text(
-              "Expense",
-              style: TextStyle(
-                fontSize: 25,
+//EXPENSE TILE
+DbHelper dbHelper = DbHelper();
+
+List<String> months = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+Widget expenseTile(int value, String note, DateTime date, int index) {
+  return InkWell(
+    splashColor: Colors.blueAccent,
+    onLongPress: () async {
+      bool? ans = await showConfirmDialog(
+          context, "WARNING", "Do you want to delete this record ?");
+      if (ans != null && ans) {
+        dbHelper.deleteData(index);
+      }
+    },
+    child: Container(
+      margin: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+          color: const Color(0xffced4eb),
+          borderRadius: BorderRadius.circular(8)),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Column(
+            children: [
+              const Row(
+                children: [
+                  Icon(
+                    Icons.arrow_circle_down_outlined,
+                    size: 23,
+                    color: Colors.green,
+                  ),
+                  SizedBox(
+                    width: 4,
+                  ),
+                  Text(
+                    "Expense",
+                    style: TextStyle(
+                      fontSize: 25,
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
-        Text(
-          "- $value",
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-        )
-      ],
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  "${date.day} , ${months[date.month - 1]}",
+                  style: const TextStyle(
+                      fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                "- $value",
+                style:
+                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              Text(
+                " $note",
+                style: TextStyle(color: Colors.grey[900]),
+              ),
+            ],
+          )
+        ],
+      ),
     ),
   );
 }
 
-Widget incomeTile(int value, String note) {
+//INCOME TILE
+
+Widget incomeTile(int value, String note, DateTime date, int index) {
+  List<String> months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
   return Container(
     margin: const EdgeInsets.all(8),
     padding: const EdgeInsets.all(18),
@@ -434,28 +546,50 @@ Widget incomeTile(int value, String note) {
         color: const Color(0xffced4eb), borderRadius: BorderRadius.circular(8)),
     child: Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Row(
+        Column(
           children: [
-            Icon(
-              Icons.arrow_circle_down_outlined,
-              size: 23,
-              color: Colors.green,
+            const Row(
+              children: [
+                Icon(
+                  Icons.arrow_circle_down_outlined,
+                  size: 23,
+                  color: Colors.green,
+                ),
+                SizedBox(
+                  width: 4,
+                ),
+                Text(
+                  "Income",
+                  style: TextStyle(
+                    fontSize: 25,
+                  ),
+                ),
+              ],
             ),
-            SizedBox(
-              width: 4,
-            ),
-            Text(
-              "Income",
-              style: TextStyle(
-                fontSize: 25,
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(
+                "${date.day} , ${months[date.month - 1]}",
+                style:
+                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
             ),
           ],
         ),
-        Text(
-          "+ $value",
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              "+ $value",
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            Text(
+              " $note",
+              style: TextStyle(color: Colors.grey[900]),
+            ),
+          ],
         )
       ],
     ),
