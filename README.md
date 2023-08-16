@@ -7,3 +7,6 @@
 
 ##  Screenshot of the App.
 
+
+![a](https://github.com/surajmandal99/money_manager/assets/105273927/be8f672b-7f86-456a-b695-6932bcc78194)
+
