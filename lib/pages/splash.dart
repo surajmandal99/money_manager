@@ -32,22 +32,30 @@ class _SplashState extends State<Splash> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 0.0,
-      ),
-      backgroundColor: const Color(0xffe2e7ef),
-
-      //body
-      body: Center(
-        child: Container(
-          decoration: BoxDecoration(
-              color: Colors.white70, borderRadius: BorderRadius.circular(12)),
-          padding: const EdgeInsets.all(10),
-          width: 64,
-          height: 64,
-          child: Image.asset("assets/images/pay.png"),
+        appBar: AppBar(
+          toolbarHeight: 0.0,
         ),
-      ),
-    );
+        backgroundColor: const Color(0xffe2e7ef),
+
+        //body
+        body: Center(
+          child: Container(
+              decoration: BoxDecoration(
+                  color: Colors.white70,
+                  borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.all(10),
+              width: 64,
+              height: 64,
+              child: Image.asset(
+                "assets/images/pay.png",
+                scale: 0.2,
+              )
+              // const Icon(
+              //   Icons.attach_money_outlined,
+              //   size: 40,
+              //   color: Colors.black,
+              // )),
+              ),
+        ));
   }
 }

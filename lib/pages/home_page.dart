@@ -5,7 +5,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:money_manager/controllers/db_helper.dart';
 import 'package:money_manager/models/transaction_model.dart';
 import 'package:money_manager/pages/add_transaction.dart';
-import 'package:money_manager/widgets/conform_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
@@ -115,7 +114,8 @@ class _HomePageState extends State<HomePage> {
           toolbarHeight: 0.0,
         ),
         backgroundColor: const Color(0xffe2e7ef),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        floatingActionButtonLocation:
+            FloatingActionButtonLocation.miniCenterFloat,
         floatingActionButton: FloatingActionButton(
           onPressed: () {
             Navigator.push(
@@ -174,7 +174,7 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 Text(
                                   "Welcome ${preferences.getString('name')}",
-                                  style: GoogleFonts.lato(
+                                  style: GoogleFonts.piazzolla(
                                       fontSize: 22,
                                       color: Colors.black,
                                       fontWeight: FontWeight.bold),
@@ -203,8 +203,8 @@ class _HomePageState extends State<HomePage> {
                       child: Container(
                         decoration: const BoxDecoration(
                           gradient: LinearGradient(colors: [
-                            Colors.blueAccent,
-                            Colors.lightBlue,
+                            Colors.black,
+                            Colors.black38,
                           ]),
                           borderRadius: BorderRadius.all(Radius.circular(25)),
                         ),
@@ -252,8 +252,8 @@ class _HomePageState extends State<HomePage> {
                       padding: const EdgeInsets.all(12),
                       child: Text(
                         "Expenses",
-                        style: GoogleFonts.lato(
-                          fontSize: 30,
+                        style: GoogleFonts.poppins(
+                          fontSize: 25,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -298,7 +298,7 @@ class _HomePageState extends State<HomePage> {
                                 lineBarsData: [
                                   LineChartBarData(
                                       spots: getPloatPoints(snapshot.data!),
-                                      isCurved: false,
+                                      isCurved: true,
                                       barWidth: 2.5,
                                       color: Colors.blueAccent)
                                 ])),
@@ -308,7 +308,7 @@ class _HomePageState extends State<HomePage> {
                       padding: const EdgeInsets.all(12),
                       child: Text(
                         "Recent Transactions",
-                        style: GoogleFonts.lato(
+                        style: GoogleFonts.poppins(
                           fontSize: 30,
                           fontWeight: FontWeight.bold,
                         ),
@@ -343,6 +343,7 @@ class _HomePageState extends State<HomePage> {
                               dataAtIndex.note,
                               dataAtIndex.date,
                               index,
+                              context,
                             );
                           }
                         }),
@@ -435,8 +436,6 @@ Widget cardExpense(String value) {
 }
 
 //EXPENSE TILE
-DbHelper dbHelper = DbHelper();
-
 List<String> months = [
   "Jan",
   "Feb",
@@ -451,72 +450,68 @@ List<String> months = [
   "Nov",
   "Dec",
 ];
-Widget expenseTile(int value, String note, DateTime date, int index) {
-  return InkWell(
-    splashColor: Colors.blueAccent,
-    onLongPress: () async {
-      bool? ans = await showConfirmDialog(
-          context, "WARNING", "Do you want to delete this record ?");
-      if (ans != null && ans) {
-        dbHelper.deleteData(index);
-      }
-    },
-    child: Container(
-      margin: const EdgeInsets.all(8),
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-          color: const Color(0xffced4eb),
-          borderRadius: BorderRadius.circular(8)),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            children: [
-              const Row(
-                children: [
-                  Icon(
-                    Icons.arrow_circle_down_outlined,
-                    size: 23,
-                    color: Colors.green,
-                  ),
-                  SizedBox(
-                    width: 4,
-                  ),
-                  Text(
-                    "Expense",
-                    style: TextStyle(
-                      fontSize: 25,
+
+Widget expenseTile(
+    int value, String note, DateTime date, int index, BuildContext context) {
+  return Container(
+    margin: const EdgeInsets.all(8),
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(
+        color: const Color(0xffced4eb), borderRadius: BorderRadius.circular(8)),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Column(
+              children: [
+                const Row(
+                  children: [
+                    Icon(
+                      Icons.arrow_circle_up_outlined,
+                      size: 23,
+                      color: Colors.red,
                     ),
+                    SizedBox(
+                      width: 4,
+                    ),
+                    Text(
+                      "Expense",
+                      style: TextStyle(
+                        fontSize: 25,
+                      ),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    "${date.day} , ${months[date.month - 1]}",
+                    style: const TextStyle(
+                        fontSize: 24, fontWeight: FontWeight.bold),
                   ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  "${date.day} , ${months[date.month - 1]}",
+                ),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  "- $value",
                   style: const TextStyle(
                       fontSize: 24, fontWeight: FontWeight.bold),
                 ),
-              ),
-            ],
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                "- $value",
-                style:
-                    const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              Text(
-                " $note",
-                style: TextStyle(color: Colors.grey[900]),
-              ),
-            ],
-          )
-        ],
-      ),
+                Text(
+                  " $note",
+                  style: TextStyle(color: Colors.grey[900]),
+                ),
+              ],
+            )
+          ],
+        ),
+      ],
     ),
   );
 }
