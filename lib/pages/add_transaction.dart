@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -16,7 +18,7 @@ class _AddTransactionState extends State<AddTransaction> {
   String type = "Income";
   DateTime selectedDate = DateTime.now();
 
-  List<String> months = [
+  static List<String> months = [
     "Jan",
     "Feb",
     "Mar",
@@ -37,7 +39,7 @@ class _AddTransactionState extends State<AddTransaction> {
         context: context,
         firstDate: DateTime(2021, 12),
         initialDate: selectedDate,
-        lastDate: DateTime(2050, 01));
+        lastDate: DateTime(2080, 01));
     if (picked != null && picked != selectedDate) {
       setState(() {
         selectedDate = picked;

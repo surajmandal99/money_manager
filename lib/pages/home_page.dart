@@ -15,31 +15,15 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<String> months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-
   DbHelper dbHelper = DbHelper();
   DateTime today = DateTime.now();
   late Box box;
-  // DateTime now = DateTime.now();
+  DateTime now = DateTime.now();
   int totalBalance = 0;
   int totalIncome = 0;
   int totalExpense = 0;
   late SharedPreferences preferences;
   List<FlSpot> dataSet = [];
-
   @override
   void initState() {
     super.initState();
@@ -76,7 +60,7 @@ class _HomePageState extends State<HomePage> {
         tempDataSet.add(data);
       }
     }
-    //sorting of
+    //sorting of list as per the data
     tempDataSet.sort((a, b) => a.date.day.compareTo(b.date.day));
 
     for (var i = 0; i < tempDataSet.length; i++) {
@@ -143,7 +127,11 @@ class _HomePageState extends State<HomePage> {
               }
               if (snapshot.hasData) {
                 if (snapshot.data!.isEmpty) {
-                  return const Center(child: Text("No Values Found"));
+                  return const Center(
+                      child: Text(
+                    " You haven't added any Data !",
+                    style: TextStyle(fontSize: 22),
+                  ));
                 }
 
                 //card totalbalance
